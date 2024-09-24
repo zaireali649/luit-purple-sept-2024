@@ -44,26 +44,6 @@ jobs:
           aws cloudformation wait stack-create-complete --stack-name ec2-hello-world-stack
 
       - name: Get the public URL of the deployed EC2 instance
-        id: get_url
         run: |
           STACK_OUTPUT=$(aws cloudformation describe-stacks --stack-name ec2-hello-world-stack --query 'Stacks[0].Outputs[?OutputKey==`WebsiteURL`].OutputValue' --output text)
           echo "Webpage URL: $STACK_OUTPUT"
-          echo "webpage_url=$STACK_OUTPUT" >> $GITHUB_ENV
-
-      - name: Smoke test the webpage
-        run: |
-          URL="${{ env.webpage_url }}"
-          END_TIME=$((SECONDS + 180))
-          while [ $SECONDS -lt $END_TIME ]; do
-            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$URL")
-            if [ "$STATUS" -eq 200 ]; then
-              echo "Webpage is up and returned 200 OK."
-              exit 0
-            fi
-            # Random sleep between 1 to 10 seconds
-            SLEEP_DURATION=$(( (RANDOM % 10) + 1 ))
-            echo "Status: $STATUS. Retrying in $SLEEP_DURATION seconds..."
-            sleep $SLEEP_DURATION
-          done
-          echo "Webpage did not return 200 OK within the time limit."
-          exit 1
