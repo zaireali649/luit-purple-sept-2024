@@ -24,7 +24,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Check if the CloudFormation stack exists
+        id: check_stack
+        run: |
+          STACK_NAME="ec2-hello-world-stack"
+          EXISTING_STACK=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].StackStatus' --output text || echo "DOES_NOT_EXIST")
+          echo "stack_status=$EXISTING_STACK" >> $GITHUB_ENV
+
+      - name: Delete existing stack if it exists
+        if: env.stack_status != 'DOES_NOT_EXIST'
+        run: |
+          echo "Deleting existing stack..."
+          aws cloudformation delete-stack --stack-name ec2-hello-world-stack
+          aws cloudformation wait stack-delete-complete --stack-name ec2-hello-world-stack
+
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation create-stack --stack-name ec2-hello-world-stack --template-body file://webpage_ec2_cf.yaml
-            
+          aws cloudformation wait stack-create-complete --stack-name ec2-hello-world-stack
+
+      - name: Get the public URL of the deployed EC2 instance
+        run: |
+          STACK_OUTPUT=$(aws cloudformation describe-stacks --stack-name ec2-hello-world-stack --query 'Stacks[0].Outputs[?OutputKey==`WebsiteURL`].OutputValue' --output text)
+          echo "Webpage URL: $STACK_OUTPUT"
