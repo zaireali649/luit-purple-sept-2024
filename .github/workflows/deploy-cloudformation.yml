@@ -26,6 +26,5 @@ jobs:
 
       - name: Deploy CloudFormation stack
         run: |
-          aws cloudformation deploy \
-            --template-file webpage_ec2_cf.yaml \ # Update path if needed
-            --stack-name ec2-hello-world-stack
+          aws cloudformation create-stack --stack-name ec2-hello-world-stack --template-body file://webpage_ec2_cf.yaml
+            
